@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useReducer, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useReducer, ReactNode } from "react";
 import { appReducer, initialState, AppState } from "../types";
 
 const STORAGE_KEY = "shuahu_user";
@@ -23,7 +23,7 @@ function setStoredUser(user: { id: string; avatar: string }) {
 
 const AppContext = createContext<{
   state: AppState;
-  dispatch: React.Dispatch<any>;
+  dispatch: React.Dispatch<import("../types").AppAction>;
 } | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {

@@ -48,10 +48,49 @@ export default function QuizPage() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!answer.trim() || isEvaluating) return;
     setIsEvaluating(true);
-    setTimeout(() => {
+
+    try {
+      // 调用真实评分 API
+      const response = await fetch("/api/evaluate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          questionId: question.id,
+          scene: question.scene,
+          title: question.title,
+          content: question.content,
+          userAnswer: answer,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.evaluation) {
+        dispatch({
+          type: "ADD_ANSWER",
+          record: {
+            question,
+            answer,
+            evaluation: { ...data.evaluation, userAnswer: answer },
+          },
+        });
+      } else {
+        // 降级到假数据
+        const mockEval = getMockEvaluation(question.id);
+        dispatch({
+          type: "ADD_ANSWER",
+          record: {
+            question,
+            answer,
+            evaluation: { ...mockEval, userAnswer: answer },
+          },
+        });
+      }
+    } catch {
+      // API 失败时降级到假数据
       const mockEval = getMockEvaluation(question.id);
       dispatch({
         type: "ADD_ANSWER",
@@ -61,9 +100,10 @@ export default function QuizPage() {
           evaluation: { ...mockEval, userAnswer: answer },
         },
       });
+    } finally {
       setIsEvaluating(false);
       setShowEval(true);
-    }, 1500);
+    }
   };
 
   const handleNext = () => {

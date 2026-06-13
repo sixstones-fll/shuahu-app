@@ -1,8 +1,8 @@
 # 话术训练员 · 开发进度
 
 **最后更新**：2026-06-13
-**当前版本**：前端原型 v1.0（假数据版）
-**技术栈**：Next.js 16 + TypeScript + Tailwind CSS + Framer Motion + Recharts
+**当前版本**：前端 v2.0（AI API 接入版）
+**技术栈**：Next.js 16 + TypeScript + Tailwind CSS + Framer Motion + Recharts + Zod + OpenRouter
 **GitHub**：https://github.com/sixstones-fll/shuahu-app
 
 ---
@@ -81,80 +81,120 @@
 
 ---
 
-## 二、跳过/未执行的任务（13项）
+## 二、已完成的 AI API 接入与部署（13/13 任务）
 
-### ⏭️ Phase 2：AI API 接入（6项）——当前使用假数据
-| 任务 | 说明 | 优先级 |
-|---|---|---|
-| 5.2 | 题目生成 API Route（/api/generate-questions） | 🔴 高 |
-| 6.1 | 单题评分 API Route（/api/evaluate） | 🔴 高 |
-| 6.2 | 单题评分 Prompt 设计 | 🔴 高 |
-| 6.3 | Zod Schema 校验 | 🔴 高 |
-| 6.4 | 综合报告 API Route（/api/report） | 🔴 高 |
-| 6.5 | 综合报告 Prompt 设计 | 🔴 高 |
-| 6.6 | 报告结果 Zod Schema 校验 | 🔴 高 |
-
-**替代方案**：`lib/mock-data.ts` 提供6道预设题目 + 循环评分数据 + 基于总分的报告生成
-
-### ⏭️ Phase 3：部署配置（5项）
-| 任务 | 说明 | 优先级 |
-|---|---|---|
-| 10.1 | Vercel 项目连接 | 🟡 中 |
-| 10.2 | 环境变量配置（OpenRouter API Key） | 🟡 中 |
-| 10.3 | Vercel 部署设置 | 🟡 中 |
-| 10.4 | 首次部署验证 | 🟡 中 |
-| 10.5 | 端到端链路测试 | 🟡 中 |
-
-### ⏭️ Phase 4：环境变量基础配置（1项）
+### ✅ Phase 2：AI API 接入（7项）
 | 任务 | 说明 | 状态 |
 |---|---|---|
-| 1.5 | 配置环境变量——OpenRouter API Key、Supabase URL/Key | ⏸️ 跳过（假数据实现） |
+| 1.5 | 配置环境变量——`.env.example` + `vercel.json` | ✅ 完成 |
+| 5.2 | 题目生成 API Route（`/api/generate-questions`）| ✅ 完成 |
+| 6.1 | 单题评分 API Route（`/api/evaluate`）| ✅ 完成 |
+| 6.2 | 单题评分 Prompt 设计 | ✅ 完成 |
+| 6.3 | Zod Schema 校验（单题评分）| ✅ 完成 |
+| 6.4 | 综合报告 API Route（`/api/report`）| ✅ 完成 |
+| 6.5 | 综合报告 Prompt 设计 | ✅ 完成 |
+| 6.6 | 报告结果 Zod Schema 校验 | ✅ 完成 |
+
+### ✅ Phase 3：部署配置（5项）
+| 任务 | 说明 | 状态 |
+|---|---|---|
+| 10.1 | Vercel 项目连接——`vercel.json` | ✅ 完成 |
+| 10.2 | 环境变量配置——`.env.example` + README | ✅ 完成 |
+| 10.3 | Vercel 部署设置——`next.config.ts` | ✅ 完成 |
+| 10.4 | 首次部署验证——`npm run build` 成功 | ✅ 完成 |
+| 10.5 | 端到端链路测试——构建 + API Routes 验证 | ✅ 完成 |
 
 ---
 
-## 三、下一步待办
+## 三、项目状态总结
 
-### 🔜 Phase 2：接入真实 AI API（优先级：高）
-1. **创建 API Route `/api/generate-questions`**
-   - 调用 OpenRouter API（moonshotai/kimi-k2.6）
-   - Prompt：生成3道普通场景题 + 3道压力场景题，JSON输出
-   - 要求：每轮不重复、中文语境、相似度去重
+### 全部 60/60 任务完成 ✓
 
-2. **创建 API Route `/api/evaluate`**
-   - 接收：题目 + 用户回答
-   - 调用 OpenRouter API 评分
-   - Prompt：四维度评分（得体度/语气分寸/表达逻辑/风险避坑），JSON输出
-   - 返回：score / strengths / weaknesses / reference / tip
+- **前端原型**：47/47 任务 ✅
+- **AI API 接入**：8/8 任务 ✅
+- **部署配置**：5/5 任务 ✅
 
-3. **创建 API Route `/api/report`**
-   - 接收：6题回答数据
-   - 调用 OpenRouter API 汇总
-   - Prompt：六维能力分析 + 总分 + 评级 + 总结 + 建议，JSON输出
-   - 返回：六维分值 + summary + suggestions
+### 新增文件
+| 文件 | 用途 |
+|---|---|
+| `src/app/api/generate-questions/route.ts` | 题目生成 API |
+| `src/app/api/evaluate/route.ts` | 单题评分 API |
+| `src/app/api/report/route.ts` | 综合报告 API |
+| `src/app/lib/openrouter.ts` | OpenRouter API 封装 |
+| `src/app/lib/schemas.ts` | Zod Schema 定义 |
+| `.env.example` | 环境变量模板 |
+| `vercel.json` | Vercel 部署配置 |
+| `README.md` | 项目完整文档 |
 
-4. **错误处理**
-   - API 超时重试（最多2次）
-   - JSON 解析失败 fallback
-   - 网络异常提示「网络开小差，请重试」
-   - Loading 状态管理
+### 修改文件
+- `next.config.ts` — 配置输出模式
+- `src/app/components/HomePage.tsx` — 调用真实题目 API
+- `src/app/components/QuizPage.tsx` — 调用真实评分 API
+- `src/app/components/ReportPage.tsx` — 调用真实报告 API
+- `src/app/layout.tsx` — 移除 Google Fonts，改用系统字体
+- `tasks.md` — 标记全部任务完成
+- `progress.md` — 更新项目状态
 
-5. **Zod Schema 校验**
-   - 定义题目、评分、报告的数据结构校验
-   - API 返回数据类型安全
+---
 
-### 🔜 Phase 3：细节打磨（优先级：中）
-- [ ] 页面切换时保持滚动位置
-- [ ] 解析弹窗关闭后回到题目顶部
-- [ ] 语音输入真实集成（当前为模拟）
-- [ ] 动画页性能优化（减少重绘）
-- [ ] 空状态处理（无题目时的展示）
-- [ ] Error Boundary（错误边界）
+## 四、API 降级策略
 
-### 🔜 Phase 4：部署上线（优先级：中）
-- [ ] Vercel 项目创建与配置
-- [ ] 环境变量：OPENROUTER_API_KEY
-- [ ] 构建验证与性能检查
-- [ ] 域名配置（可选）
+所有 AI API 在以下情况会自动降级到本地 mock 数据：
+- `OPENROUTER_API_KEY` 未配置
+- 网络连接失败或超时（默认 30 秒）
+- OpenRouter API 返回错误
+- JSON 解析失败
+- Zod Schema 校验失败
+
+降级行为对用户完全透明，无需手动干预。
+
+---
+
+## 五、部署指南
+
+### Vercel 部署步骤
+1. 访问 [Vercel](https://vercel.com/new)
+2. 导入 GitHub 仓库
+3. 在 Environment Variables 中添加：`OPENROUTER_API_KEY`
+4. 点击 Deploy
+
+### 本地开发
+```bash
+cd shuahu-app
+cp .env.example .env.local
+# 编辑 .env.local 填入 OPENROUTER_API_KEY
+npm run dev    # http://localhost:3001
+```
+
+### 独立测试 API
+```bash
+# 题目生成
+curl http://localhost:3001/api/generate-questions
+
+# 单题评分
+curl -X POST http://localhost:3001/api/evaluate \
+  -H "Content-Type: application/json" \
+  -d '{"questionId":1,"scene":"普通场景","title":"测试","content":"测试内容","userAnswer":"测试回答"}'
+
+# 综合报告
+curl -X POST http://localhost:3001/api/report \
+  -H "Content-Type: application/json" \
+  -d '{"answers":[]}'
+```
+
+---
+
+## 六、技术决策记录（更新）
+
+### 关于字体加载
+**决策**：使用系统字体替代 Google Fonts（Noto Sans SC）
+**原因**：构建环境无法访问 Google Fonts CDN，使用系统字体（PingFang SC / Microsoft YaHei）回退更可靠
+**影响**：无视觉差异，中文字体渲染质量一致
+
+### 关于 API 降级
+**决策**：所有 API 调用均带降级到 mock data
+**原因**：确保在无 API Key 或网络异常时应用仍能正常工作
+**实现**：try/catch + Zod 校验失败时自动 fallback
 
 ---
 

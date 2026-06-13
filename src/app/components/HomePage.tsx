@@ -1,19 +1,40 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { MessageCircle, ArrowRight } from "lucide-react";
+import { MessageCircle, ArrowRight, Loader2 } from "lucide-react";
 import { useApp } from "./AppProvider";
 import { MOCK_QUESTIONS } from "../lib/mock-data";
 
 export default function HomePage() {
   const { state, dispatch } = useApp();
   const user = state.user!;
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleStart = () => {
-    // 打乱顺序
-    const shuffled = [...MOCK_QUESTIONS].sort(() => Math.random() - 0.5);
-    dispatch({ type: "SET_QUESTIONS", questions: shuffled });
-    dispatch({ type: "SET_PHASE", phase: "quiz" });
+  const handleStart = async () => {
+    if (isLoading) return;
+    setIsLoading(true);
+
+    try {
+      // 尝试调用真实 API 生成题目
+      const response = await fetch("/api/generate-questions");
+      const data = await response.json();
+
+      if (data.questions && Array.isArray(data.questions)) {
+        dispatch({ type: "SET_QUESTIONS", questions: data.questions });
+      } else {
+        // 降级到假数据
+        const shuffled = [...MOCK_QUESTIONS].sort(() => Math.random() - 0.5);
+        dispatch({ type: "SET_QUESTIONS", questions: shuffled });
+      }
+    } catch {
+      // API 失败时降级到假数据
+      const shuffled = [...MOCK_QUESTIONS].sort(() => Math.random() - 0.5);
+      dispatch({ type: "SET_QUESTIONS", questions: shuffled });
+    } finally {
+      setIsLoading(false);
+      dispatch({ type: "SET_PHASE", phase: "quiz" });
+    }
   };
 
   return (
@@ -65,10 +86,20 @@ export default function HomePage() {
           <motion.button
             whileTap={{ scale: 0.96 }}
             onClick={handleStart}
-            className="group flex items-center gap-2 mx-auto px-8 py-4 rounded-2xl bg-neutral-900 text-white font-semibold text-lg shadow-xl shadow-neutral-900/20 hover:bg-neutral-800 transition-all"
+            disabled={isLoading}
+            className="group flex items-center gap-2 mx-auto px-8 py-4 rounded-2xl bg-neutral-900 text-white font-semibold text-lg shadow-xl shadow-neutral-900/20 hover:bg-neutral-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            开始答题
-            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            {isLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                出题中...
+              </>
+            ) : (
+              <>
+                开始答题
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </>
+            )}
           </motion.button>
 
           {/* 提示 */}

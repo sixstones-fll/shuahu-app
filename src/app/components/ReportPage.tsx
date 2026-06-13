@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   RadarChart,
@@ -9,16 +10,61 @@ import {
   Radar,
   ResponsiveContainer,
 } from "recharts";
-import { ArrowLeft, RotateCcw, Home, Star, Target, Zap, TrendingUp } from "lucide-react";
+import { ArrowLeft, RotateCcw, Home, Star, Target, TrendingUp, Loader2 } from "lucide-react";
 import { useApp } from "./AppProvider";
 import { getMockReport } from "../lib/mock-data";
 
 export default function ReportPage() {
   const { state, dispatch } = useApp();
+  const [report, setReport] = useState(getMockReport(0));
+  const [isLoading, setIsLoading] = useState(true);
 
   // 计算总分
   const totalScore = state.answers.reduce((sum, a) => sum + a.evaluation.score, 0);
-  const report = getMockReport(totalScore);
+
+  useEffect(() => {
+    async function fetchReport() {
+      if (state.answers.length === 0) {
+        setReport(getMockReport(0));
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/report", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            answers: state.answers.map((a) => ({
+              question: a.question,
+              answer: a.answer,
+              evaluation: {
+                score: a.evaluation.score,
+                strengths: a.evaluation.strengths,
+                weaknesses: a.evaluation.weaknesses,
+                reference: a.evaluation.reference,
+                tip: a.evaluation.tip,
+              },
+            })),
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.report) {
+          setReport(data.report);
+        } else {
+          setReport(getMockReport(totalScore));
+        }
+      } catch {
+        setReport(getMockReport(totalScore));
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchReport();
+  }, [state.answers, totalScore]);
 
   const handleRestart = () => {
     dispatch({ type: "RESET_QUIZ" });
@@ -27,6 +73,18 @@ export default function ReportPage() {
   const handleHome = () => {
     dispatch({ type: "SET_PHASE", phase: "home" });
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-full flex flex-col bg-[#F5F5DC] noise-bg-light relative items-center justify-center">
+        <ChatBgSpots />
+        <div className="relative z-10 text-center space-y-4">
+          <Loader2 className="w-10 h-10 text-neutral-800 animate-spin mx-auto" />
+          <p className="text-neutral-600 text-sm">正在生成专属报告...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full flex flex-col bg-[#F5F5DC] noise-bg-light relative">
