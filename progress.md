@@ -1,13 +1,15 @@
 # 话术训练员 · 开发进度
 
 **最后更新**：2026-06-13
-**当前版本**：前端 v2.0（AI API 接入版）
+**当前版本**：v2.0 生产版（AI API + Vercel 部署）
 **技术栈**：Next.js 16 + TypeScript + Tailwind CSS + Framer Motion + Recharts + Zod + OpenRouter
 **GitHub**：https://github.com/sixstones-fll/shuahu-app
+**在线访问**：https://shuahu-app.vercel.app
+**状态**：✅ 全部 60/60 任务完成，已部署上线
 
 ---
 
-## 一、已完成（47/60 任务）
+## 一、已完成（60/60 任务）
 
 ### ✅ 项目基础架构
 - [x] Next.js 项目初始化（App Router / TypeScript / Tailwind CSS）
@@ -275,5 +277,29 @@ npx next start       # 生产启动
 | Commit | 说明 |
 |---|---|
 | `7ceb185` | Initial commit: 前端原型 v1.0（假数据版） |
+| `25d8072` | feat: 接入 OpenRouter AI API + Vercel 部署 |
 
 分支：`main` → `origin/main`（已推送到 GitHub）
+
+---
+
+## 九、部署状态
+
+| 环境 | 地址 | 状态 |
+|---|---|---|
+| 生产环境 | https://shuahu-app.vercel.app | ✅ 在线 |
+| Vercel 项目 | sixstones-projects/shuahu-app | ✅ 已连接 |
+| GitHub 仓库 | https://github.com/sixstones-fll/shuahu-app | ✅ 已同步 |
+
+---
+
+## 十、等待下一次修改
+
+当前项目处于**稳定运行状态**，等待后续迭代需求。可能的改进方向：
+
+- [ ] 用户历史记录持久化（如需）
+- [ ] 排行榜/社交功能（如需）
+- [ ] 更多题目场景类型
+- [ ] 语音输入真实集成（Web Speech API）
+- [ ] PWA 离线支持
+- [ ] 动画性能优化
