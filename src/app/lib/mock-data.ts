@@ -19,7 +19,6 @@ export interface MockEvaluation {
 }
 
 // 题目变体 + 专属点评 一一对应
-// 每个变体有独立的题目内容和匹配的点评
 interface QuestionVariant {
   question: MockQuestion;
   evaluation: MockEvaluation;
@@ -357,7 +356,7 @@ export const QUESTION_VARIANTS: QuestionVariant[][] = [
         title: "被保险推销员纠缠",
         content: "保险推销员打电话说：「这款重疾险今天最后一天优惠，过了今天就涨价30%，你现在就定下来吧。」你还需要考虑，对方不断施压，该怎么回应？",
       },
-        evaluation: {
+      evaluation: {
         score: 6,
         strengths: ["没有因为限时优惠而仓促决定", "意识到需要充分了解产品"],
         weaknesses: ["没有主动结束通话", "没有要求书面材料以便后续决策"],
@@ -371,84 +370,130 @@ export const QUESTION_VARIANTS: QuestionVariant[][] = [
   ],
 ];
 
-// 每轮随机抽取每道题的一个变体，确保不重复
-// 使用 sessionStorage 记录已使用的变体索引
-export function getRandomQuestions(): MockQuestion[] {
-  // 读取已使用的变体记录
-  let usedVariants: number[][] = [];
+// 统一的题目选择逻辑：确保两轮不重复
+// 使用 sessionStorage 记录全局已使用的变体
+function getUsedVariants(): number[][] {
   try {
     const stored = sessionStorage.getItem("shuahu_used_variants");
-    if (stored) {
-      usedVariants = JSON.parse(stored);
-    }
-  } catch {
-    // sessionStorage 不可用，忽略
-  }
+    if (stored) return JSON.parse(stored);
+  } catch { /* ignore */ }
+  return [];
+}
 
-  const questions: MockQuestion[] = [];
-  const currentRoundUsed: number[] = [];
+function saveUsedVariants(used: number[][]) {
+  try {
+    sessionStorage.setItem("shuahu_used_variants", JSON.stringify(used));
+  } catch { /* ignore */ }
+}
+
+function clearUsedVariants() {
+  try {
+    sessionStorage.removeItem("shuahu_used_variants");
+  } catch { /* ignore */ }
+}
+
+// 核心去重逻辑：从每个场景中选一个未使用过的变体
+// 如果某场景所有变体都用过了，重置该场景
+export function selectQuestionsForRound(): QuestionVariant[] {
+  let usedVariants = getUsedVariants();
+  const selected: QuestionVariant[] = [];
 
   for (let sceneIdx = 0; sceneIdx < QUESTION_VARIANTS.length; sceneIdx++) {
     const variants = QUESTION_VARIANTS[sceneIdx];
-    // 获取该场景已使用的变体索引
     const sceneUsed = usedVariants[sceneIdx] || [];
 
     // 找出未使用的变体
-    const availableIndices = variants
+    const available = variants
       .map((_, i) => i)
       .filter((i) => !sceneUsed.includes(i));
 
     let chosenIdx: number;
-    if (availableIndices.length > 0) {
+    if (available.length > 0) {
       // 从未使用过的变体中随机选择
-      chosenIdx = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+      chosenIdx = available[Math.floor(Math.random() * available.length)];
     } else {
-      // 所有变体都用过了，重置并重新随机
+      // 所有变体都用过了，重置该场景
       chosenIdx = Math.floor(Math.random() * variants.length);
-      // 清空该场景的已使用记录（重新开始循环）
       usedVariants[sceneIdx] = [];
     }
 
     // 记录本次使用的变体
     if (!usedVariants[sceneIdx]) usedVariants[sceneIdx] = [];
     usedVariants[sceneIdx].push(chosenIdx);
-    currentRoundUsed.push(chosenIdx);
 
-    questions.push({ ...variants[chosenIdx].question });
+    selected.push(variants[chosenIdx]);
   }
 
-  // 保存已使用记录
-  try {
-    sessionStorage.setItem("shuahu_used_variants", JSON.stringify(usedVariants));
-  } catch {
-    // sessionStorage 不可用，忽略
-  }
+  saveUsedVariants(usedVariants);
+  return selected;
+}
 
+// 前端获取随机题目（用于 HomePage 调用）
+export function getRandomQuestions(): MockQuestion[] {
+  const selected = selectQuestionsForRound();
+  const questions = selected.map((v) => ({ ...v.question }));
   // 打乱顺序
   return questions.sort(() => Math.random() - 0.5);
 }
 
-// 根据题目 id 和变体索引获取对应的点评
-// 由于打乱顺序后无法直接知道变体索引，我们通过题目内容匹配
+// 获取题目对应的点评（通过 title 精确匹配）
 export function getMockEvaluation(questionId: number, questionTitle: string): MockEvaluation {
-  // 找到对应的场景
   const sceneVariants = QUESTION_VARIANTS[questionId - 1];
   if (!sceneVariants) {
-    // 兜底：返回第一个场景的点评
     return QUESTION_VARIANTS[0][0].evaluation;
   }
 
-  // 通过 title 匹配具体变体
   const variant = sceneVariants.find((v) => v.question.title === questionTitle);
   if (variant) {
     return variant.evaluation;
   }
 
-  // 如果匹配不到，返回该场景第一个变体的点评
   return sceneVariants[0].evaluation;
 }
 
-// 兼容旧版调用（仅用于 API 降级兜底）
+// API 降级兜底：返回完整题目池 + 已使用记录，让前端统一选择去重
+export function getAllQuestionVariantsForAPI(): {
+  questions: MockQuestion[];
+  usedVariants: number[][];
+} {
+  const usedVariants = getUsedVariants();
+  const questions: MockQuestion[] = [];
+
+  for (let sceneIdx = 0; sceneIdx < QUESTION_VARIANTS.length; sceneIdx++) {
+    const variants = QUESTION_VARIANTS[sceneIdx];
+    const sceneUsed = usedVariants[sceneIdx] || [];
+
+    // 找出未使用的变体
+    const available = variants
+      .map((_, i) => i)
+      .filter((i) => !sceneUsed.includes(i));
+
+    let chosenIdx: number;
+    if (available.length > 0) {
+      chosenIdx = available[Math.floor(Math.random() * available.length)];
+    } else {
+      chosenIdx = Math.floor(Math.random() * variants.length);
+      usedVariants[sceneIdx] = [];
+    }
+
+    if (!usedVariants[sceneIdx]) usedVariants[sceneIdx] = [];
+    usedVariants[sceneIdx].push(chosenIdx);
+
+    questions.push({ ...variants[chosenIdx].question });
+  }
+
+  // 打乱顺序
+  const shuffled = questions.sort(() => Math.random() - 0.5);
+
+  return { questions: shuffled, usedVariants };
+}
+
+// API 降级后保存已使用记录
+export function saveAPIUsedVariants(used: number[][]) {
+  saveUsedVariants(used);
+}
+
+// 兼容旧版调用（仅用于 API evaluate 降级兜底）
 export function getMockEvaluationById(questionId: number): MockEvaluation {
   const sceneVariants = QUESTION_VARIANTS[questionId - 1];
   if (sceneVariants) {

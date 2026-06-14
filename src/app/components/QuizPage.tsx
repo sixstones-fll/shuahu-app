@@ -48,40 +48,55 @@ export default function QuizPage() {
 
     const recognition = new SpeechRecognition();
     recognition.lang = "zh-CN";
-    recognition.continuous = true;
+    recognition.continuous = false; // 改为非连续模式，说完一段自动结束
     recognition.interimResults = true;
     recognitionRef.current = recognition;
 
-    // 记录本轮识别开始前的文本长度，用于增量追加
-    let prevLength = answer.length;
+    // 记录本轮识别开始前的文本
+    let baseText = answer;
+    let interimText = "";
 
     recognition.onstart = () => {
       setIsListening(true);
     };
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let finalChunk = "";
-      let interimChunk = "";
+      let finalText = "";
+      interimText = "";
+
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
-          finalChunk += transcript;
+          finalText += transcript;
         } else {
-          interimChunk += transcript;
+          interimText += transcript;
         }
       }
 
-      setAnswer((prev) => {
-        const base = prev.slice(0, prevLength);
-        const combined = finalChunk + interimChunk;
-        // 只在最终有结果时更新 prevLength，避免 interim 阶段污染
-        if (finalChunk) {
-          prevLength = base.length + finalChunk.length;
-        }
-        if (!combined) return prev;
-        const separator = base.length > 0 && !base.endsWith("，") && !base.endsWith("。") && !base.endsWith("！") && !base.endsWith("？") ? "，" : "";
-        return base + separator + combined;
-      });
+      // 如果有最终结果，直接追加到 baseText
+      if (finalText) {
+        const separator = baseText.length > 0 &&
+          !baseText.endsWith("，") &&
+          !baseText.endsWith("。") &&
+          !baseText.endsWith("！") &&
+          !baseText.endsWith("？") &&
+          !baseText.endsWith("\n")
+          ? "，"
+          : "";
+        baseText = baseText + separator + finalText;
+        setAnswer(baseText);
+      } else if (interimText) {
+        // 只有中间结果时，临时显示 base + interim（不保存 interim）
+        const separator = baseText.length > 0 &&
+          !baseText.endsWith("，") &&
+          !baseText.endsWith("。") &&
+          !baseText.endsWith("！") &&
+          !baseText.endsWith("？") &&
+          !baseText.endsWith("\n")
+          ? "，"
+          : "";
+        setAnswer(baseText + separator + interimText);
+      }
     };
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
@@ -89,6 +104,8 @@ export default function QuizPage() {
         alert("麦克风权限被拒绝，请在浏览器设置中允许使用麦克风");
       } else if (event.error === "no-speech") {
         // 未检测到语音，静默处理
+      } else if (event.error === "aborted") {
+        // 用户主动停止，静默处理
       } else {
         console.error("语音识别错误:", event.error);
       }
@@ -99,6 +116,8 @@ export default function QuizPage() {
     recognition.onend = () => {
       setIsListening(false);
       recognitionRef.current = null;
+      // 确保最终状态是 baseText（不含 interim）
+      setAnswer(baseText);
     };
 
     recognition.start();

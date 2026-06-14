@@ -5,7 +5,7 @@
 import { NextResponse } from "next/server";
 import { callOpenRouter, extractJsonFromMarkdown } from "../../lib/openrouter";
 import { GenerateQuestionsResponseSchema } from "../../lib/schemas";
-import { getRandomQuestions } from "../../lib/mock-data";
+import { getAllQuestionVariantsForAPI, saveAPIUsedVariants } from "../../lib/mock-data";
 
 export async function GET() {
   try {
@@ -59,11 +59,14 @@ export async function GET() {
   } catch (error) {
     console.error("Generate questions API error:", error);
 
-    // 降级到 mock data — 每道题随机抽取变体，打乱顺序但保留原始 id，确保与 mock 点评一一对应
-    const questions = getRandomQuestions();
+    // 降级到 mock data — 使用统一的去重逻辑，确保两轮不重复
+    const { questions, usedVariants } = getAllQuestionVariantsForAPI();
+    // 保存已使用记录到 sessionStorage（通过前端传递）
+    // 注意：API 端无法直接访问 sessionStorage，需要前端在收到响应后自行保存
+    // 这里我们在响应中包含 usedVariants，让前端处理
 
     return NextResponse.json(
-      { questions, _fallback: true },
+      { questions, _fallback: true, usedVariants },
       { status: 200 }
     );
   }

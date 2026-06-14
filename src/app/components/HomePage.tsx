@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { MessageCircle, ArrowRight, Loader2 } from "lucide-react";
 import { useApp } from "./AppProvider";
-import { getRandomQuestions } from "../lib/mock-data";
+import { getRandomQuestions, saveAPIUsedVariants } from "../lib/mock-data";
 
 export default function HomePage() {
   const { state, dispatch } = useApp();
@@ -21,13 +21,17 @@ export default function HomePage() {
       const data = await response.json();
 
       if (data.questions && Array.isArray(data.questions)) {
+        // 如果 API 返回了 usedVariants，保存到 sessionStorage
+        if (data._fallback && data.usedVariants) {
+          saveAPIUsedVariants(data.usedVariants);
+        }
         dispatch({ type: "SET_QUESTIONS", questions: data.questions });
       } else {
-        // 降级到假数据 — 每道题随机抽取变体
+        // 降级到假数据 — 每道题随机抽取变体（统一去重逻辑）
         dispatch({ type: "SET_QUESTIONS", questions: getRandomQuestions() });
       }
     } catch {
-      // API 失败时降级到假数据 — 每道题随机抽取变体
+      // API 失败时降级到假数据 — 每道题随机抽取变体（统一去重逻辑）
       dispatch({ type: "SET_QUESTIONS", questions: getRandomQuestions() });
     } finally {
       setIsLoading(false);
