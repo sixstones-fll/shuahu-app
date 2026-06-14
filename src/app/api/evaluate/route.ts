@@ -9,7 +9,7 @@ import {
   EvaluateResponseSchema,
   type EvaluateRequest,
 } from "../../lib/schemas";
-import { getMockEvaluation } from "../../lib/mock-data";
+import { getMockEvaluationById } from "../../lib/mock-data";
 
 export async function POST(request: Request) {
   // 先读取 body 并保存，避免后续重复读取
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     rawBody = await request.json();
   } catch {
     return NextResponse.json(
-      { evaluation: getMockEvaluation(1), _fallback: true },
+      { evaluation: getMockEvaluationById(1), _fallback: true },
       { status: 200 }
     );
   }
@@ -86,7 +86,7 @@ export async function POST(request: Request) {
       questionId = 1;
     }
 
-    const mockEval = getMockEvaluation(questionId);
+    const mockEval = getMockEvaluationById(questionId);
     return NextResponse.json(
       { evaluation: mockEval, _fallback: true },
       { status: 200 }

@@ -134,8 +134,8 @@ export default function QuizPage() {
           },
         });
       } else {
-        // 降级到假数据
-        const mockEval = getMockEvaluation(question.id);
+        // 降级到假数据 — 通过 title 匹配具体变体的点评
+        const mockEval = getMockEvaluation(question.id, question.title);
         dispatch({
           type: "ADD_ANSWER",
           record: {
@@ -146,8 +146,8 @@ export default function QuizPage() {
         });
       }
     } catch {
-      // API 失败时降级到假数据
-      const mockEval = getMockEvaluation(question.id);
+      // API 失败时降级到假数据 — 通过 title 匹配具体变体的点评
+      const mockEval = getMockEvaluation(question.id, question.title);
       dispatch({
         type: "ADD_ANSWER",
         record: {
