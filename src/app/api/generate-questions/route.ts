@@ -5,7 +5,7 @@
 import { NextResponse } from "next/server";
 import { callOpenRouter, extractJsonFromMarkdown } from "../../lib/openrouter";
 import { GenerateQuestionsResponseSchema } from "../../lib/schemas";
-import { MOCK_QUESTIONS } from "../../lib/mock-data";
+import { getRandomQuestions } from "../../lib/mock-data";
 
 export async function GET() {
   try {
@@ -59,11 +59,11 @@ export async function GET() {
   } catch (error) {
     console.error("Generate questions API error:", error);
 
-    // 降级到 mock data — 打乱顺序但保留原始 id，确保与 mock 点评一一对应
-    const shuffled = [...MOCK_QUESTIONS].sort(() => Math.random() - 0.5);
+    // 降级到 mock data — 每道题随机抽取变体，打乱顺序但保留原始 id，确保与 mock 点评一一对应
+    const questions = getRandomQuestions();
 
     return NextResponse.json(
-      { questions: shuffled, _fallback: true },
+      { questions, _fallback: true },
       { status: 200 }
     );
   }

@@ -52,26 +52,35 @@ export default function QuizPage() {
     recognition.interimResults = true;
     recognitionRef.current = recognition;
 
-    let finalTranscript = "";
+    // 记录本轮识别开始前的文本长度，用于增量追加
+    let prevLength = answer.length;
 
     recognition.onstart = () => {
       setIsListening(true);
     };
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let interimTranscript = "";
+      let finalChunk = "";
+      let interimChunk = "";
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
-          finalTranscript += transcript;
+          finalChunk += transcript;
         } else {
-          interimTranscript += transcript;
+          interimChunk += transcript;
         }
       }
+
       setAnswer((prev) => {
-        const base = prev.endsWith("，") || prev.endsWith("。") || prev.endsWith("！") || prev.endsWith("？") || prev === "" ? prev : prev + "，";
-        const combined = finalTranscript + interimTranscript;
-        return base + combined;
+        const base = prev.slice(0, prevLength);
+        const combined = finalChunk + interimChunk;
+        // 只在最终有结果时更新 prevLength，避免 interim 阶段污染
+        if (finalChunk) {
+          prevLength = base.length + finalChunk.length;
+        }
+        if (!combined) return prev;
+        const separator = base.length > 0 && !base.endsWith("，") && !base.endsWith("。") && !base.endsWith("！") && !base.endsWith("？") ? "，" : "";
+        return base + separator + combined;
       });
     };
 
@@ -93,7 +102,7 @@ export default function QuizPage() {
     };
 
     recognition.start();
-  }, [isListening]);
+  }, [isListening, answer]);
 
   const handleSubmit = async () => {
     if (!answer.trim() || isEvaluating) return;

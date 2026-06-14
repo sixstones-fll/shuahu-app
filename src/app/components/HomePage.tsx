@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { MessageCircle, ArrowRight, Loader2 } from "lucide-react";
 import { useApp } from "./AppProvider";
-import { MOCK_QUESTIONS } from "../lib/mock-data";
+import { getRandomQuestions } from "../lib/mock-data";
 
 export default function HomePage() {
   const { state, dispatch } = useApp();
@@ -23,14 +23,12 @@ export default function HomePage() {
       if (data.questions && Array.isArray(data.questions)) {
         dispatch({ type: "SET_QUESTIONS", questions: data.questions });
       } else {
-        // 降级到假数据
-        const shuffled = [...MOCK_QUESTIONS].sort(() => Math.random() - 0.5);
-        dispatch({ type: "SET_QUESTIONS", questions: shuffled });
+        // 降级到假数据 — 每道题随机抽取变体
+        dispatch({ type: "SET_QUESTIONS", questions: getRandomQuestions() });
       }
     } catch {
-      // API 失败时降级到假数据
-      const shuffled = [...MOCK_QUESTIONS].sort(() => Math.random() - 0.5);
-      dispatch({ type: "SET_QUESTIONS", questions: shuffled });
+      // API 失败时降级到假数据 — 每道题随机抽取变体
+      dispatch({ type: "SET_QUESTIONS", questions: getRandomQuestions() });
     } finally {
       setIsLoading(false);
       dispatch({ type: "SET_PHASE", phase: "quiz" });
