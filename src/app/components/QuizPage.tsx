@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
@@ -23,6 +23,7 @@ export default function QuizPage() {
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [showEval, setShowEval] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   const questions = state.questions;
   const currentIdx = state.currentQuestionIndex;
@@ -31,22 +32,68 @@ export default function QuizPage() {
 
   if (!question) return null;
 
-  const handleVoiceToggle = () => {
-    const supported = "SpeechRecognition" in window || "webkitSpeechRecognition" in window;
-    if (!supported) {
-      alert("您的浏览器不支持语音输入");
+  const handleVoiceToggle = useCallback(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("您的浏览器不支持语音输入，请使用 Chrome / Edge / Safari 浏览器");
       return;
     }
-    if (isListening) {
+
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
       setIsListening(false);
-    } else {
-      setIsListening(true);
-      setTimeout(() => {
-        setAnswer((p) => p + "我觉得可以这样做，先表达理解，然后说明自己的情况。");
-        setIsListening(false);
-      }, 2000);
+      return;
     }
-  };
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "zh-CN";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognitionRef.current = recognition;
+
+    let finalTranscript = "";
+
+    recognition.onstart = () => {
+      setIsListening(true);
+    };
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let interimTranscript = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+      setAnswer((prev) => {
+        const base = prev.endsWith("，") || prev.endsWith("。") || prev.endsWith("！") || prev.endsWith("？") || prev === "" ? prev : prev + "，";
+        const combined = finalTranscript + interimTranscript;
+        return base + combined;
+      });
+    };
+
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      if (event.error === "not-allowed") {
+        alert("麦克风权限被拒绝，请在浏览器设置中允许使用麦克风");
+      } else if (event.error === "no-speech") {
+        // 未检测到语音，静默处理
+      } else {
+        console.error("语音识别错误:", event.error);
+      }
+      setIsListening(false);
+      recognitionRef.current = null;
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      recognitionRef.current = null;
+    };
+
+    recognition.start();
+  }, [isListening]);
 
   const handleSubmit = async () => {
     if (!answer.trim() || isEvaluating) return;

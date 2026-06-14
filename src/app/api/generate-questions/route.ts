@@ -59,12 +59,11 @@ export async function GET() {
   } catch (error) {
     console.error("Generate questions API error:", error);
 
-    // 降级到 mock data
+    // 降级到 mock data — 打乱顺序但保留原始 id，确保与 mock 点评一一对应
     const shuffled = [...MOCK_QUESTIONS].sort(() => Math.random() - 0.5);
-    const fallback = shuffled.map((q, i) => ({ ...q, id: i + 1 }));
 
     return NextResponse.json(
-      { questions: fallback, _fallback: true },
+      { questions: shuffled, _fallback: true },
       { status: 200 }
     );
   }
